@@ -1,11 +1,13 @@
+import { createThisTypeNode } from 'typescript';
+
+const { init } = require('../src')
+
 beforeEach(() => {
   jest.resetModules()
 })
 
 describe('effects:', () => {
   test('should create an action', () => {
-    const { init, dispatch } = require('../src')
-
     const count = {
       state: 0,
       effects: {
@@ -13,18 +15,13 @@ describe('effects:', () => {
       },
     }
 
-    init({
+    const store = init({
       models: { count }
     })
 
-    expect(typeof dispatch.count.add).toBe('function')
+    expect(typeof store.dispatch.count.add).toBe('function')
   })
   test('first param should be payload', () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
-
     let value = 1
 
     const count = {
@@ -36,29 +33,25 @@ describe('effects:', () => {
       },
     }
 
-    init({
+    const store = init({
       models: { count }
     })
 
-    dispatch({ type: 'count/add', payload: 4 })
+    store.dispatch({ type: 'count/add', payload: 4 })
 
     expect(value).toBe(5)
   })
 
   test('second param should contain state', () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
     const count = {
       state: 7,
       reducers: {
         add: (s, p) => s + p
       },
       effects: {
-        makeCall: (payload, state) => {
+        makeCall(payload, state) {
           const { count } = state
-          dispatch.count.add(count + 1)
+          this.add(count + 1)
         },
       },
     }
@@ -67,7 +60,7 @@ describe('effects:', () => {
       models: { count }
     })
 
-    dispatch.count.makeCall(2)
+    store.dispatch.count.makeCall(2)
 
     expect(store.getState().count).toBe(15)
   })
@@ -87,10 +80,6 @@ describe('effects:', () => {
   // })
 
   test('should be able to trigger another action', async () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
     const example = {
       state: 0,
       reducers: {
@@ -98,7 +87,7 @@ describe('effects:', () => {
       },
       effects: {
         asyncAddOneArrow: async () => {
-          await dispatch.example.addOne()
+          await this.addOne()
         }
       }
     }
@@ -107,7 +96,7 @@ describe('effects:', () => {
       models: { example }
     })
 
-    await dispatch.example.asyncAddOneArrow()
+    await store.dispatch.example.asyncAddOneArrow()
 
     expect(store.getState()).toEqual({
       example: 1,
@@ -141,10 +130,6 @@ describe('effects:', () => {
   // })
 
   test('should be able trigger a local reducer using functions and `this`', async () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
     const example = {
       state: 0,
       reducers: {
@@ -161,7 +146,7 @@ describe('effects:', () => {
       models: { example }
     })
 
-    await dispatch.example.asyncAddOne()
+    await store.dispatch.example.asyncAddOne()
 
     expect(store.getState()).toEqual({
       example: 1,
@@ -169,10 +154,6 @@ describe('effects:', () => {
   })
 
   test('should be able trigger a local reducer using object function shorthand and `this`', async () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
     const example = {
       state: 0,
       reducers: {
@@ -189,7 +170,7 @@ describe('effects:', () => {
       models: { example }
     })
 
-    await dispatch.example.asyncAddOne()
+    await store.dispatch.example.asyncAddOne()
 
     expect(store.getState()).toEqual({
       example: 1,
@@ -197,10 +178,6 @@ describe('effects:', () => {
   })
 
   test('should be able to trigger another action with a value', async () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
     const example = {
       state: 2,
       reducers: {
@@ -208,7 +185,7 @@ describe('effects:', () => {
       },
       effects: {
         asyncAddBy: async (value) => {
-          await dispatch.example.addBy(value)
+          await this.addBy(value)
         }
       }
     }
@@ -217,7 +194,7 @@ describe('effects:', () => {
       models: { example }
     })
 
-    await dispatch.example.asyncAddBy(5)
+    await store.dispatch.example.asyncAddBy(5)
 
     expect(store.getState()).toEqual({
       example: 7,
@@ -225,10 +202,6 @@ describe('effects:', () => {
   })
 
   test('should be able to trigger another action w/ an object value', async () => {
-    const {
-      init, dispatch
-    } = require('../src')
-    
     const example = {
       state: 3,
       reducers: {
@@ -236,7 +209,7 @@ describe('effects:', () => {
       },
       effects: {
         asyncAddBy: async (value) => {
-          await dispatch.example.addBy(value)
+          await this.addBy(value)
         }
       }
     }
@@ -245,7 +218,7 @@ describe('effects:', () => {
       models: { example }
     })
 
-    await dispatch.example.asyncAddBy({ value: 6 })
+    await store.dispatch.example.asyncAddBy({ value: 6 })
 
     expect(store.getState()).toEqual({
       example: 9,
@@ -253,10 +226,6 @@ describe('effects:', () => {
   })
 
   test('should be able to trigger another action w/ another action', async () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
     const example = {
       name: 'example',
       state: 0,
@@ -265,10 +234,10 @@ describe('effects:', () => {
       },
       effects: {
         asyncAddOne: async () => {
-          await dispatch.example.addOne()
+          await this.addOne()
         },
         asyncCallAddOne: async () => {
-          await dispatch.example.asyncAddOne()
+          await this.asyncAddOne()
         }
       }
     }
@@ -277,7 +246,7 @@ describe('effects:', () => {
       models: { example }
     })
 
-    await dispatch.example.asyncCallAddOne()
+    await store.dispatch.example.asyncCallAddOne()
 
     expect(store.getState()).toEqual({
       example: 1,
@@ -285,10 +254,6 @@ describe('effects:', () => {
   })
 
   test('should be able to trigger another action w/ multiple actions', async () => {
-    const {
-      init, dispatch
-    } = require('../src')
-
     const example = {
       state: 0,
       reducers: {
@@ -296,15 +261,15 @@ describe('effects:', () => {
       },
       effects: {
         asyncAddOne: async () => {
-          await dispatch.example.addBy(1)
+          await this.addBy(1)
         },
         asyncAddThree: async () => {
-          await dispatch.example.addBy(3)
+          await this.addBy(3)
         },
         asyncAddSome: async () => {
-          await dispatch.example.asyncAddThree()
-          await dispatch.example.asyncAddOne()
-          await dispatch.example.asyncAddOne()
+          await this.asyncAddThree()
+          await this.asyncAddOne()
+          await this.asyncAddOne()
         }
       }
     }
@@ -313,7 +278,7 @@ describe('effects:', () => {
       models: { example }
     })
 
-    await dispatch.example.asyncAddSome()
+    await store.dispatch.example.asyncAddSome()
 
     await setTimeout(() => {
       expect(store.getState()).toEqual({
@@ -323,9 +288,6 @@ describe('effects:', () => {
   })
 
   test('should throw if the effect name is invalid', () => {
-    const {
-      model, init
-    } = require('../src')
     const store = init()
 
     expect(() => store.model({
@@ -338,9 +300,6 @@ describe('effects:', () => {
   })
 
   test('should throw if the effect is not a function', () => {
-    const {
-      model, init
-    } = require('../src')
     const store = init()
 
     expect(() => store.model({
@@ -353,19 +312,17 @@ describe('effects:', () => {
   })
 
   test('should not validate effect if production', () => {
-    const { init } = require('../src')
+  process.env.NODE_ENV = 'production'
 
-      process.env.NODE_ENV = 'production'
+    const count = {
+      state: 0,
+      effects: {
+        'add/invalid': state => state + 1,
+      },
+    }
 
-      const count = {
-        state: 0,
-        effects: {
-          'add/invalid': state => state + 1,
-        },
-      }
-
-      expect(() => init({
-        models: { count }
-      })).not.toThrow()
+    expect(() => init({
+      models: { count }
+    })).not.toThrow()
   })
 })
